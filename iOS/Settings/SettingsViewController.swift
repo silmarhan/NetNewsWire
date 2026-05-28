@@ -62,6 +62,7 @@ final class SettingsViewController: UITableViewController {
 	}
 
 	private weak var opmlAccount: Account?
+	private let translationSectionIndex = 8
 
 	@IBOutlet var timelineSortOrderSwitch: UISwitch!
 	@IBOutlet var groupByFeedSwitch: UISwitch!
@@ -165,6 +166,7 @@ final class SettingsViewController: UITableViewController {
 	// MARK: UITableView
 
 	override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+		if section == translationSectionIndex { return 1 }
 
 		switch Section(rawValue: section) {
 		case .accounts:
@@ -191,6 +193,13 @@ final class SettingsViewController: UITableViewController {
 
 	override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
 
+		if indexPath.section == translationSectionIndex {
+			let cell = UITableViewCell(style: .default, reuseIdentifier: "translationRow")
+			cell.textLabel?.text = NSLocalizedString("LLM Translation", comment: "")
+			cell.accessoryType = .disclosureIndicator
+			return cell
+		}
+
 		let cell: UITableViewCell
 		switch Section(rawValue: indexPath.section) {
 		case .accounts:
@@ -216,6 +225,12 @@ final class SettingsViewController: UITableViewController {
 	}
 
 	override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+
+		if indexPath.section == translationSectionIndex {
+			let vc = TranslationSettingsViewController()
+			navigationController?.pushViewController(vc, animated: true)
+			return
+		}
 
 		switch Section(rawValue: indexPath.section) {
 		case .notifications:
@@ -327,6 +342,19 @@ final class SettingsViewController: UITableViewController {
 
 	override func tableView(_ tableView: UITableView, indentationLevelForRowAt indexPath: IndexPath) -> Int {
 		return super.tableView(tableView, indentationLevelForRowAt: IndexPath(row: 0, section: Section.accounts.rawValue))
+	}
+
+	// MARK: - Translation section (appended dynamically)
+
+	override func numberOfSections(in tableView: UITableView) -> Int {
+		super.numberOfSections(in: tableView) + 1
+	}
+
+	override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+		if section == translationSectionIndex {
+			return NSLocalizedString("Translation", comment: "Translation settings section header")
+		}
+		return super.tableView(tableView, titleForHeaderInSection: section)
 	}
 
 	// MARK: Actions
