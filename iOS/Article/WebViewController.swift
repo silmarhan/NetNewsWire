@@ -17,6 +17,7 @@ import MessageUI
 
 @MainActor protocol WebViewControllerDelegate: AnyObject {
 	func webViewController(_: WebViewController, articleExtractorButtonStateDidUpdate: ArticleExtractorButtonState)
+	func webViewController(_: WebViewController, translateButtonStateDidUpdate: TranslateButtonState)
 }
 
 final class WebViewController: UIViewController {
@@ -63,6 +64,14 @@ final class WebViewController: UIViewController {
 			delegate?.webViewController(self, articleExtractorButtonStateDidUpdate: articleExtractorButtonState)
 		}
 	}
+
+	var translateButtonState: TranslateButtonState = .off {
+		didSet {
+			delegate?.webViewController(self, translateButtonStateDidUpdate: translateButtonState)
+		}
+	}
+
+	private var translationTask: Task<Void, Never>?
 
 	weak var coordinator: SceneCoordinator!
 	weak var delegate: WebViewControllerDelegate?
@@ -293,6 +302,35 @@ final class WebViewController: UIViewController {
 	func stopArticleExtractorIfProcessing() {
 		if articleExtractor?.state == .processing {
 			stopArticleExtractor()
+		}
+	}
+
+	func toggleTranslation() {
+		guard let article = article else { return }
+
+		switch translateButtonState {
+		case .animated:
+			translationTask?.cancel()
+			translationTask = nil
+			translateButtonState = .off
+			return
+		case .on:
+			translateButtonState = .off
+			loadWebView()
+			return
+		case .off, .error:
+			break
+		}
+
+		let settings = TranslationSettings()
+		guard settings.isConfigured else {
+			presentMissingAPIKeyAlert()
+			return
+		}
+
+		translateButtonState = .animated
+		translationTask = Task { [weak self] in
+			await self?.runTranslation(article: article, settings: settings)
 		}
 	}
 
@@ -671,6 +709,9 @@ private extension WebViewController {
 		articleExtractor = nil
 		isShowingExtractedArticle = false
 		articleExtractorButtonState = .off
+		translationTask?.cancel()
+		translationTask = nil
+		translateButtonState = .off
 	}
 
 	func reloadArticleImage() {
@@ -944,4 +985,156 @@ extension WebViewController {
 		webView?.evaluateJavaScript("selectPreviousResult()")
 	}
 
+}
+
+// MARK: - Translation
+
+private extension WebViewController {
+
+	@MainActor
+	func runTranslation(article: Article, settings: TranslationSettings) async {
+		do {
+			// 1. Extract title + body HTML from the live DOM.
+			// template.html uses .articleTitle (with inner <h1><a>) and #bodyContainer.
+			let titleHTML = try await evaluateJavaScriptString("document.querySelector('.articleTitle h1') ? document.querySelector('.articleTitle h1').innerHTML : ''") ?? ""
+			let bodyHTML = try await evaluateJavaScriptString("document.getElementById('bodyContainer') ? document.getElementById('bodyContainer').innerHTML : ''") ?? ""
+
+			if titleHTML.isEmpty && bodyHTML.isEmpty {
+				translateButtonState = .off
+				return
+			}
+
+			// 2. Cache lookup
+			let articleID = article.articleID
+			let contentHash = TranslationStore.contentHash(title: titleHTML, bodyHTML: bodyHTML)
+			let store = TranslationStore(databaseURL: TranslationStore.defaultDatabaseURL())
+
+			let payload: String
+			if let cached = store.fetch(articleID: articleID, model: settings.model, contentHash: contentHash) {
+				payload = cached
+			} else {
+				guard let apiKey = settings.apiKey else {
+					presentMissingAPIKeyAlert()
+					translateButtonState = .off
+					return
+				}
+				let raw = try await LLMTranslationService().translate(
+					title: titleHTML,
+					bodyHTML: bodyHTML,
+					baseURL: settings.baseURL,
+					model: settings.model,
+					apiKey: apiKey
+				)
+				let sanitized = HTMLSanitizer.sanitize(raw)
+				store.put(articleID: articleID, model: settings.model,
+						  contentHash: contentHash, translatedHTML: sanitized)
+				payload = sanitized
+			}
+
+			if Task.isCancelled {
+				translateButtonState = .off
+				return
+			}
+
+			// 3. Split + inject
+			let split = try TranslatedHTML.split(payload)
+			try await injectTranslation(title: split.title, body: split.body)
+			translateButtonState = .on
+
+		} catch is CancellationError {
+			translateButtonState = .off
+		} catch let LLMTranslationService.TranslationError.providerError(message, _) {
+			presentTranslationErrorToast(message: message)
+			translateButtonState = .error
+		} catch let LLMTranslationService.TranslationError.network(urlError) {
+			presentTranslationErrorToast(message: urlError.localizedDescription)
+			translateButtonState = .error
+		} catch {
+			presentTranslationErrorToast(message: NSLocalizedString("Translation failed. Try again.", comment: ""))
+			translateButtonState = .error
+		}
+	}
+
+	@MainActor
+	func injectTranslation(title: String, body: String) async throws {
+		let titleJS = encodeForJS(title)
+		let bodyJS = encodeForJS(body)
+		let script = """
+		(function(){
+		  var t = document.querySelector('.articleTitle h1');
+		  if (t) t.innerHTML = \(titleJS);
+		  var b = document.getElementById('bodyContainer');
+		  if (b) b.innerHTML = \(bodyJS);
+		})();
+		"""
+		try await evaluateJavaScriptVoid(script)
+	}
+
+	func encodeForJS(_ s: String) -> String {
+		// Encode arbitrary string as a JS string literal using JSON.
+		// [s] -> "[\"...\"]" — strip array brackets.
+		let data = (try? JSONSerialization.data(withJSONObject: [s], options: [])) ?? Data("[\"\"]".utf8)
+		let arrayLiteral = String(data: data, encoding: .utf8) ?? "[\"\"]"
+		return String(arrayLiteral.dropFirst().dropLast())
+	}
+
+	func presentMissingAPIKeyAlert() {
+		let alert = UIAlertController(
+			title: NSLocalizedString("API Key Required", comment: ""),
+			message: NSLocalizedString("Add an API key in Settings → Translation.", comment: ""),
+			preferredStyle: .alert)
+		alert.addAction(.init(title: NSLocalizedString("OK", comment: ""), style: .default))
+		topPresentedViewController().present(alert, animated: true)
+	}
+
+	func presentTranslationErrorToast(message: String) {
+		let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+		topPresentedViewController().present(alert, animated: true)
+		DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+			alert.dismiss(animated: true)
+		}
+	}
+
+	func topPresentedViewController() -> UIViewController {
+		let root = UIApplication.shared.connectedScenes
+			.compactMap { ($0 as? UIWindowScene)?.keyWindow?.rootViewController }
+			.first
+		var top: UIViewController = root ?? self
+		while let next = top.presentedViewController { top = next }
+		return top
+	}
+
+	@MainActor
+	func evaluateJavaScriptString(_ script: String) async throws -> String? {
+		try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String?, Error>) in
+			guard let webView = webView else {
+				continuation.resume(returning: nil)
+				return
+			}
+			webView.evaluateJavaScript(script) { result, error in
+				if let error = error {
+					continuation.resume(throwing: error)
+				} else {
+					continuation.resume(returning: result as? String)
+				}
+			}
+		}
+	}
+
+	@MainActor
+	func evaluateJavaScriptVoid(_ script: String) async throws {
+		try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+			guard let webView = webView else {
+				continuation.resume(returning: ())
+				return
+			}
+			webView.evaluateJavaScript(script) { _, error in
+				if let error = error {
+					continuation.resume(throwing: error)
+				} else {
+					continuation.resume(returning: ())
+				}
+			}
+		}
+	}
 }
