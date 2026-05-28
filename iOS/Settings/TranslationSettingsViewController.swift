@@ -64,7 +64,7 @@ final class TranslationSettingsViewController: UITableViewController, UITextFiel
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        save()
+        _ = save()
     }
 
     // MARK: - Table
@@ -127,15 +127,20 @@ final class TranslationSettingsViewController: UITableViewController, UITextFiel
 
     // MARK: - Save
 
-    private func save() {
+    private func save() -> Error? {
         if let s = baseURLField.text, TranslationSettings.isValidBaseURLString(s), let url = URL(string: s) {
             settings.baseURL = url
         }
         settings.model = modelField.text ?? ""
-        if let key = apiKeyField.text, !key.isEmpty {
-            try? TranslationAPIKeyStore.save(key)
-        } else {
-            try? TranslationAPIKeyStore.delete()
+        do {
+            if let key = apiKeyField.text, !key.isEmpty {
+                try TranslationAPIKeyStore.save(key)
+            } else {
+                try TranslationAPIKeyStore.delete()
+            }
+            return nil
+        } catch {
+            return error
         }
     }
 
@@ -143,7 +148,11 @@ final class TranslationSettingsViewController: UITableViewController, UITextFiel
 
     @objc private func testTapped() {
         view.endEditing(true)
-        save()
+        if let saveError = save() {
+            presentResult(title: NSLocalizedString("Could not save API key", comment: ""),
+                          message: String(describing: saveError))
+            return
+        }
 
         guard let key = TranslationAPIKeyStore.load(), !key.isEmpty else {
             presentResult(title: NSLocalizedString("Missing API Key", comment: ""),
