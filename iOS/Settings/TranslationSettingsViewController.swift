@@ -142,17 +142,28 @@ final class TranslationSettingsViewController: UITableViewController, UITextFiel
     // MARK: - Actions
 
     @objc private func testTapped() {
+        view.endEditing(true)
         save()
+
         guard let key = TranslationAPIKeyStore.load(), !key.isEmpty else {
-            statusLabel.text = NSLocalizedString("Enter an API key first.", comment: "")
+            presentResult(title: NSLocalizedString("Missing API Key", comment: ""),
+                          message: NSLocalizedString("Enter an API key first.", comment: ""))
             return
         }
-        statusLabel.text = NSLocalizedString("Testing…", comment: "")
-        statusLabel.textColor = .secondaryLabel
-        let service = LLMTranslationService()
+
         let base = settings.baseURL
         let model = settings.model
+        let service = LLMTranslationService()
+
+        let progress = UIAlertController(
+            title: NSLocalizedString("Testing…", comment: ""),
+            message: "POST \(base.absoluteString)/chat/completions\nmodel: \(model)",
+            preferredStyle: .alert)
+        present(progress, animated: true)
+
         Task { @MainActor [weak self] in
+            let title: String
+            let message: String
             do {
                 let html = try await service.translate(
                     title: "Hello",
@@ -161,16 +172,31 @@ final class TranslationSettingsViewController: UITableViewController, UITextFiel
                     model: model,
                     apiKey: key
                 )
-                self?.statusLabel.text = NSLocalizedString("OK: ", comment: "") + String(html.prefix(80))
-                self?.statusLabel.textColor = .systemGreen
+                title = NSLocalizedString("OK", comment: "")
+                message = String(html.prefix(200))
             } catch let LLMTranslationService.TranslationError.providerError(msg, status) {
-                self?.statusLabel.text = "HTTP \(status): \(msg)"
-                self?.statusLabel.textColor = .systemRed
+                title = "HTTP \(status)"
+                message = msg
+            } catch LLMTranslationService.TranslationError.network(let urlError) {
+                title = NSLocalizedString("Network error", comment: "")
+                message = urlError.localizedDescription
+            } catch LLMTranslationService.TranslationError.malformedResponse {
+                title = NSLocalizedString("Malformed response", comment: "")
+                message = NSLocalizedString("The server returned an unexpected payload.", comment: "")
             } catch {
-                self?.statusLabel.text = error.localizedDescription
-                self?.statusLabel.textColor = .systemRed
+                title = NSLocalizedString("Error", comment: "")
+                message = error.localizedDescription
+            }
+            progress.dismiss(animated: true) {
+                self?.presentResult(title: title, message: message)
             }
         }
+    }
+
+    private func presentResult(title: String, message: String) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(.init(title: NSLocalizedString("OK", comment: ""), style: .default))
+        present(alert, animated: true)
     }
 
     @objc private func clearCacheTapped() {
