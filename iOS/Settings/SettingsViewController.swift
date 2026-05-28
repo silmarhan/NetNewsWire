@@ -90,45 +90,37 @@ final class SettingsViewController: UITableViewController {
 
 		tableView.rowHeight = UITableView.automaticDimension
 		tableView.estimatedRowHeight = 44
-
-		tableView.tableFooterView = makeTranslationFooterView()
 	}
 
-	private func makeTranslationFooterView() -> UIView {
-		let container = UIView(frame: CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 80))
+	private func makeTranslationFooterRow() -> UIView {
+		let rowHeight: CGFloat = 56
+		let container = UIView(frame: CGRect(x: 0, y: 0, width: tableView.bounds.width, height: rowHeight))
+
+		let separator = UIView(frame: CGRect(x: 0, y: 16, width: tableView.bounds.width, height: 0.5))
+		separator.backgroundColor = .separator
+		separator.autoresizingMask = [.flexibleWidth]
+		container.addSubview(separator)
 
 		let button = UIButton(type: .system)
 		button.setTitle(NSLocalizedString("LLM Translation", comment: "Translation settings entry"), for: .normal)
 		button.titleLabel?.font = .preferredFont(forTextStyle: .body)
 		button.contentHorizontalAlignment = .leading
 		button.addTarget(self, action: #selector(openTranslationSettings), for: .touchUpInside)
-		button.translatesAutoresizingMaskIntoConstraints = false
+		button.frame = CGRect(x: 24, y: 16, width: tableView.bounds.width - 56, height: rowHeight - 16)
+		button.autoresizingMask = [.flexibleWidth]
+		container.addSubview(button)
 
 		let chevron = UIImageView(image: UIImage(systemName: "chevron.right"))
 		chevron.tintColor = .tertiaryLabel
-		chevron.translatesAutoresizingMaskIntoConstraints = false
-
-		let separator = UIView()
-		separator.backgroundColor = .separator
-		separator.translatesAutoresizingMaskIntoConstraints = false
-
-		container.addSubview(separator)
-		container.addSubview(button)
+		chevron.sizeToFit()
+		chevron.frame = CGRect(
+			x: tableView.bounds.width - 24 - chevron.frame.width,
+			y: 16 + (rowHeight - 16 - chevron.frame.height) / 2,
+			width: chevron.frame.width,
+			height: chevron.frame.height
+		)
+		chevron.autoresizingMask = [.flexibleLeftMargin]
 		container.addSubview(chevron)
-
-		NSLayoutConstraint.activate([
-			separator.topAnchor.constraint(equalTo: container.topAnchor, constant: 24),
-			separator.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-			separator.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-			separator.heightAnchor.constraint(equalToConstant: 0.5),
-
-			button.topAnchor.constraint(equalTo: separator.bottomAnchor),
-			button.leadingAnchor.constraint(equalTo: container.layoutMarginsGuide.leadingAnchor, constant: 4),
-			button.bottomAnchor.constraint(equalTo: container.bottomAnchor),
-
-			chevron.centerYAnchor.constraint(equalTo: button.centerYAnchor),
-			chevron.trailingAnchor.constraint(equalTo: container.layoutMarginsGuide.trailingAnchor)
-		])
 
 		return container
 	}
@@ -185,9 +177,18 @@ final class SettingsViewController: UITableViewController {
 		buildLabel.sizeToFit()
 		buildLabel.translatesAutoresizingMaskIntoConstraints = false
 
-		let wrapperView = UIView(frame: CGRect(x: 0, y: 0, width: buildLabel.frame.width, height: buildLabel.frame.height + 10.0))
+		let translationRow = makeTranslationFooterRow()
+
+		let wrapperHeight = translationRow.frame.height + buildLabel.frame.height + 10.0
+		let wrapperView = UIView(frame: CGRect(x: 0, y: 0, width: tableView.bounds.width, height: wrapperHeight))
 		wrapperView.translatesAutoresizingMaskIntoConstraints = false
+
+		translationRow.frame = CGRect(x: 0, y: 0, width: tableView.bounds.width, height: translationRow.frame.height)
+		wrapperView.addSubview(translationRow)
+
+		buildLabel.frame = CGRect(x: 32.0, y: translationRow.frame.height, width: buildLabel.frame.width, height: buildLabel.frame.height)
 		wrapperView.addSubview(buildLabel)
+
 		tableView.tableFooterView = wrapperView
 
 	}
