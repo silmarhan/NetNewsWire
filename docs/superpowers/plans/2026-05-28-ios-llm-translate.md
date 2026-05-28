@@ -6,9 +6,36 @@
 
 **Architecture:** A new `Shared/Translate/` group holds pure logic (settings + sanitizer + cache + service). A new iOS-only `TranslateButton` mirrors `ArticleExtractorButton`. The orchestration lives on `WebViewController` (same pattern as the article extractor). A new `TranslationSettingsViewController` is added to the iOS Settings table.
 
-**Tech Stack:** Swift 6.2, UIKit, WKWebView, Swift Concurrency (`async`/`await`), FMDB (via `Modules/RSDatabase` patterns), Security framework (Keychain), `URLSession` with mockable `URLProtocol` for tests, XCTest.
+**Tech Stack:** Swift 6.2, UIKit, WKWebView, Swift Concurrency (`async`/`await`), FMDB (via `Modules/RSDatabase` patterns), Security framework (Keychain), `URLSession` with mockable `URLProtocol` for tests, **Swift Testing** (`import Testing`, `@Suite`, `@Test`, `#expect`).
 
 **Source-of-truth spec:** `docs/superpowers/specs/2026-05-28-ios-llm-translate-design.md`
+
+---
+
+## Conventions Correction (applied 2026-05-28, post-plan)
+
+After inspecting the existing test bodies, two conventions in this plan need correction. **All later tasks must follow the corrected conventions below; rewrite the in-plan code samples accordingly.**
+
+1. **Test framework is Swift Testing, not XCTest.** Existing tests under `Tests/NetNewsWireTests/` and `Tests/NetNewsWire-iOSTests/` all use:
+   ```swift
+   import Testing
+   @testable import NetNewsWire
+
+   @MainActor @Suite struct MyTests {
+       @Test func someBehavior() throws {
+           #expect(actual == expected)
+       }
+   }
+   ```
+   Convert every XCTest snippet in this plan (e.g., `final class FooTests: XCTestCase { func test_x() { XCTAssertEqual(...) } }`) into the Swift Testing form above. `XCTAssertEqual(a, b)` → `#expect(a == b)`, `XCTAssertNil(x)` → `#expect(x == nil)`, `XCTAssertNotEqual(a, b)` → `#expect(a != b)`, `XCTAssertTrue(x)` → `#expect(x)`, `XCTAssertFalse(x)` → `#expect(!x)`, `XCTAssertThrowsError(try f())` → `#expect(throws: (any Error).self) { try f() }`, `XCTFail("msg")` → `Issue.record("msg")`. For async tests just use `@Test async`.
+
+2. **Shared sources go into BOTH targets.** When using `scripts/superpowers/add_file_to_target.rb` for files under `Shared/Translate/`, pass BOTH targets: `NetNewsWire-iOS NetNewsWire`. This is required because tests `@testable import NetNewsWire` (the macOS app target) — the shared file must be a member of that target for tests to see it. The macOS app builds the file but never references it; no functional change to mac.
+
+3. **Test setUp/tearDown** patterns: Swift Testing prefers initializers/deinitializers on the suite struct, or `init()` for setup and `deinit` for teardown. Convert `override func setUp()` → `init()` (no super calls). Convert `override func tearDown()` → `deinit` if needed.
+
+4. **iOS-only files** (in `iOS/`) still go to `NetNewsWire-iOS` only.
+
+5. **Tests in `Tests/NetNewsWireTests/`** are added to the `NetNewsWireTests` target only.
 
 ---
 
