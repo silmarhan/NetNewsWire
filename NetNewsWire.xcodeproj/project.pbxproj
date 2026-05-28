@@ -12,6 +12,7 @@
 		176814002564BB2D00D98635 /* NetNewsWire iOS Widget Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 176813F32564BB2C00D98635 /* NetNewsWire iOS Widget Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		179C39EA26F76B0500D4E741 /* Zip in Frameworks */ = {isa = PBXBuildFile; productRef = 179C39E926F76B0500D4E741 /* Zip */; };
 		179D280B26F6F93D003B2E0A /* Zip in Frameworks */ = {isa = PBXBuildFile; productRef = 179D280A26F6F93D003B2E0A /* Zip */; };
+		18799C1007621C9A8817C55A /* TranslateButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBFCED923956F57867E7A38D /* TranslateButton.swift */; };
 		22DD2AE6E790CCCD9AD0C180 /* HTMLSanitizerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8D40224DE174BBC6DE386B6 /* HTMLSanitizerTests.swift */; };
 		27692BB9F5D9450894A7EDA4 /* ErrorLog in Frameworks */ = {isa = PBXBuildFile; productRef = C1939AC39272487C923003B8 /* ErrorLog */; };
 		27B86EEB25A53AAB00264340 /* Account in Frameworks */ = {isa = PBXBuildFile; productRef = 51BC2F4A24D343A500E90810 /* Account */; };
@@ -331,6 +332,7 @@
 		889F68BAE1BC306056833123 /* TranslationStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TranslationStoreTests.swift; sourceTree = "<group>"; };
 		A34F5F39A17B1123723CCCCD /* LLMTranslationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LLMTranslationService.swift; sourceTree = "<group>"; };
 		D8D40224DE174BBC6DE386B6 /* HTMLSanitizerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HTMLSanitizerTests.swift; sourceTree = "<group>"; };
+		EBFCED923956F57867E7A38D /* TranslateButton.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TranslateButton.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -782,6 +784,15 @@
 			path = Intents;
 			sourceTree = "<group>";
 		};
+		76A299688927A9E7B7878D81 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				8713B3022AFCC499DA3C4DA4 /* Article */,
+			);
+			name = iOS;
+			path = iOS;
+			sourceTree = "<group>";
+		};
 		849C64571ED37A5D003D8FC0 = {
 			isa = PBXGroup;
 			children = (
@@ -804,6 +815,7 @@
 				84CB35042DB9B5E2002AC251 /* Modules */,
 				9FDE39283E71435DE866F8BA /* Shared */,
 				35EDA1FCA4AE974E607787CD /* Tests */,
+				76A299688927A9E7B7878D81 /* iOS */,
 			);
 			sourceTree = "<group>";
 			usesTabs = 1;
@@ -822,6 +834,15 @@
 				176813F32564BB2C00D98635 /* NetNewsWire iOS Widget Extension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		8713B3022AFCC499DA3C4DA4 /* Article */ = {
+			isa = PBXGroup;
+			children = (
+				EBFCED923956F57867E7A38D /* TranslateButton.swift */,
+			);
+			name = Article;
+			path = Article;
 			sourceTree = "<group>";
 		};
 		9FDE39283E71435DE866F8BA /* Shared */ = {
@@ -1469,6 +1490,7 @@
 				C969A7D699E030175D91120C /* TranslationSettings.swift in Sources */,
 				4583F4C2B91E03B401DD60AF /* LLMTranslationService.swift in Sources */,
 				EBB3FEFD3F700DE515E2A619 /* TranslationStore.swift in Sources */,
+				18799C1007621C9A8817C55A /* TranslateButton.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
