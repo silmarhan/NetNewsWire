@@ -90,6 +90,7 @@
 		B154D27BC9C532F2C3C8F081 /* TranslatedHTML.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E004F981A320F952583B965 /* TranslatedHTML.swift */; };
 		BE939B018E9B4B13850AA286 /* ErrorLog in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C1939AC39272487C923003B8 /* ErrorLog */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		C969A7D699E030175D91120C /* TranslationSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 664376A68CB41E6E45735C61 /* TranslationSettings.swift */; };
+		CEA7B279877CB2B90150C04B /* TranslationSettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8CDF97FBA5A797B3F506A04 /* TranslationSettingsViewController.swift */; };
 		CEE687C900324CE2908FCF98 /* ErrorLog in Frameworks */ = {isa = PBXBuildFile; productRef = 8C00352722FF4540BF3E5072 /* ErrorLog */; };
 		D1A7E100000000000000A002 /* HTMLMetadata in Frameworks */ = {isa = PBXBuildFile; productRef = D1A7E100000000000000A001 /* HTMLMetadata */; };
 		D1A7E100000000000000A003 /* HTMLMetadata in Embed Frameworks */ = {isa = PBXBuildFile; productRef = D1A7E100000000000000A001 /* HTMLMetadata */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
@@ -331,6 +332,7 @@
 		84D2200922B0BC4B0019E085 /* CONTRIBUTING.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CONTRIBUTING.md; sourceTree = "<group>"; };
 		889F68BAE1BC306056833123 /* TranslationStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TranslationStoreTests.swift; sourceTree = "<group>"; };
 		A34F5F39A17B1123723CCCCD /* LLMTranslationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LLMTranslationService.swift; sourceTree = "<group>"; };
+		C8CDF97FBA5A797B3F506A04 /* TranslationSettingsViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TranslationSettingsViewController.swift; sourceTree = "<group>"; };
 		D8D40224DE174BBC6DE386B6 /* HTMLSanitizerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HTMLSanitizerTests.swift; sourceTree = "<group>"; };
 		EBFCED923956F57867E7A38D /* TranslateButton.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TranslateButton.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -784,10 +786,20 @@
 			path = Intents;
 			sourceTree = "<group>";
 		};
+		696028CD941704AA3E00FF1B /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				C8CDF97FBA5A797B3F506A04 /* TranslationSettingsViewController.swift */,
+			);
+			name = Settings;
+			path = Settings;
+			sourceTree = "<group>";
+		};
 		76A299688927A9E7B7878D81 /* iOS */ = {
 			isa = PBXGroup;
 			children = (
 				8713B3022AFCC499DA3C4DA4 /* Article */,
+				696028CD941704AA3E00FF1B /* Settings */,
 			);
 			name = iOS;
 			path = iOS;
@@ -1491,6 +1503,7 @@
 				4583F4C2B91E03B401DD60AF /* LLMTranslationService.swift in Sources */,
 				EBB3FEFD3F700DE515E2A619 /* TranslationStore.swift in Sources */,
 				18799C1007621C9A8817C55A /* TranslateButton.swift in Sources */,
+				CEA7B279877CB2B90150C04B /* TranslationSettingsViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
