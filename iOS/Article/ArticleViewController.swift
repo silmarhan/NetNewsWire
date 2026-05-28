@@ -52,6 +52,18 @@ final class ArticleViewController: UIViewController {
 		return button
 	}()
 
+	private var translateButton: TranslateButton = {
+		let button = TranslateButton(type: .system)
+		button.frame = CGRect(x: 0, y: 0, width: 44.0, height: 44.0)
+		button.setImage(UIImage(systemName: "character.book.closed"), for: .normal)
+		if #unavailable(iOS 26) {
+			button.tintColor = Assets.Colors.primaryAccent
+		} else {
+			button.tintColor = .secondaryLabel
+		}
+		return button
+	}()
+
 	weak var coordinator: SceneCoordinator!
 
 	private let poppableDelegate = PoppableGestureRecognizerDelegate()
@@ -128,6 +140,9 @@ final class ArticleViewController: UIViewController {
 		articleExtractorButton.addTarget(self, action: #selector(toggleArticleExtractor(_:)), for: .touchUpInside)
 		let articleExtractorBarButtonItem = UIBarButtonItem(customView: articleExtractorButton)
 
+		translateButton.addTarget(self, action: #selector(toggleTranslation(_:)), for: .touchUpInside)
+		let translateBarButtonItem = UIBarButtonItem(customView: translateButton)
+
 		if #available(iOS 26, *) {
 			toolbarItems?.insert(articleExtractorBarButtonItem, at: 5)
 		} else {
@@ -143,6 +158,12 @@ final class ArticleViewController: UIViewController {
 				flex(),
 				actionBarButtonItem
 			]
+		}
+
+		if let extractorIndex = toolbarItems?.firstIndex(where: { $0.customView is ArticleExtractorButton }) {
+			toolbarItems?.insert(translateBarButtonItem, at: extractorIndex + 1)
+		} else {
+			toolbarItems?.append(translateBarButtonItem)
 		}
 
 		pageViewController = UIPageViewController(transitionStyle: .scroll, navigationOrientation: .horizontal, options: [:])
@@ -182,6 +203,7 @@ final class ArticleViewController: UIViewController {
 		}
 
 		articleExtractorButton.buttonState = controller.articleExtractorButtonState
+		translateButton.buttonState = controller.translateButtonState
 
 		self.pageViewController.setViewControllers([controller], direction: .forward, animated: false, completion: nil)
 		if AppDefaults.shared.logicalArticleFullscreenEnabled {
@@ -242,6 +264,7 @@ final class ArticleViewController: UIViewController {
 
 		guard let article = article else {
 			articleExtractorButton.isEnabled = false
+			translateButton.isEnabled = false
 			nextUnreadBarButtonItem.isEnabled = false
 			prevArticleBarButtonItem.isEnabled = false
 			nextArticleBarButtonItem.isEnabled = false
@@ -259,6 +282,7 @@ final class ArticleViewController: UIViewController {
 
 		let permalinkPresent = article.preferredLink != nil
 		articleExtractorButton.isEnabled = permalinkPresent && !AppDefaults.shared.isDeveloperBuild
+		translateButton.isEnabled = permalinkPresent
 		actionBarButtonItem.isEnabled = permalinkPresent
 
 		if article.status.read {
@@ -321,6 +345,10 @@ final class ArticleViewController: UIViewController {
 
 	@IBAction func toggleArticleExtractor(_ sender: Any) {
 		currentWebViewController?.toggleArticleExtractor()
+	}
+
+	@objc func toggleTranslation(_ sender: Any?) {
+		currentWebViewController?.toggleTranslation()
 	}
 
 	@IBAction func nextUnread(_ sender: Any) {
@@ -474,6 +502,12 @@ extension ArticleViewController: WebViewControllerDelegate {
 		}
 	}
 
+	func webViewController(_ webViewController: WebViewController, translateButtonStateDidUpdate buttonState: TranslateButtonState) {
+		if webViewController === currentWebViewController {
+			translateButton.buttonState = buttonState
+		}
+	}
+
 }
 
 // MARK: UIPageViewControllerDataSource
@@ -521,6 +555,7 @@ extension ArticleViewController: UIPageViewControllerDelegate {
 
 		coordinator.selectArticle(article, animations: [.select, .scroll, .navigation])
 		articleExtractorButton.buttonState = currentWebViewController?.articleExtractorButtonState ?? .off
+		translateButton.buttonState = currentWebViewController?.translateButtonState ?? .off
 
 		for viewController in previousViewControllers {
 			if let webViewController = viewController as? WebViewController {
